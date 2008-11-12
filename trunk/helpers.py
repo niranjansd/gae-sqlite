@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datastore_sqlite_stub import DatastoreSqliteStub
+from datastore_base import DatastoreSqlStub
 from datastore_sqlite_stub import PRMHelper
 from google.appengine.api import apiproxy_stub_map
 from pysqlite2 import dbapi2 as sqlite
@@ -36,7 +36,8 @@ def setup_sqlite(name=None):
     name = 'memory'
     get_connection = lambda: connection
     release_connection = lambda x: None    
-    stub = DatastoreSqliteStub(get_connection, release_connection)
+    prm_helper = PRMHelper(get_connection, release_connection)
+    stub = DatastoreSqlStub(prm_helper)
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
     return connection
 
@@ -65,7 +66,7 @@ def create_tabledef(model_instance, prm_helper=None):
   
   # Make sure the helper exists
   if not prm_helper:
-    prm_helper = PRMHelper()
+    prm_helper = PRMHelper(None, None)
   
   # Convert the model into a map of propert key/value pairs
   entity = model_instance._populate_internal_entity()
