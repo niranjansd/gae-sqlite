@@ -46,7 +46,7 @@ class UnitTests(unittest.TestCase):
     
   def testGetSchema(self):
     helpers.create_tables([TestModel()], self.connection)
-    prm = datastore_sqlite_stub.PRMHelper()
+    prm = datastore_sqlite_stub.PRMHelper(None, None)
     schema = prm.getSchema(self.connection, 'TestModel')
     assert schema
     self.assertEquals(['text', 'number'], schema.keys())
