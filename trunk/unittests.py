@@ -22,6 +22,9 @@ import os
 class TestModel(db.Model):
   text = db.StringProperty(default='some text')
   number = db.IntegerProperty(default=42)
+  float = db.FloatProperty(default=3.14)
+  cond1 = db.BooleanProperty(default=True)
+  cond2 = db.BooleanProperty(default=False)
 
 
 class UnitTests(unittest.TestCase):
@@ -49,9 +52,11 @@ class UnitTests(unittest.TestCase):
     prm = datastore_sqlite_stub.PRMHelper(None, None)
     schema = prm.getSchema(self.connection, 'TestModel')
     assert schema
-    self.assertEquals(['text', 'number'], schema.keys())
     self.assertEquals({
         'text': ['string_text'],
+        'float': ['double_float'],
+        'cond1': ['boolean_cond1'],
+        'cond2': ['boolean_cond2'],
         'number': ['int64_number']}, schema)
     
   def testWriteSingle(self):
@@ -62,11 +67,15 @@ class UnitTests(unittest.TestCase):
     id = key._Key__reference.path().element_list()[-1].id()    
     cursor = self.connection.cursor()
     cursor.execute(
-        'SELECT string_text, int64_number FROM TestModel '
+        'SELECT string_text, int64_number, double_float, '
+        'boolean_cond1, boolean_cond2  FROM TestModel '
         'WHERE pk_int=%s' % id)
     result = cursor.fetchone()
     self.assertEquals('some text', result[0])
     self.assertEquals(42, result[1])
+    self.assertEquals(3.14, result[2])
+    self.assertEquals(1, result[3])
+    self.assertEquals(0, result[4])
     
   def testWriteDouble(self):
     """Writes a value into the database twice."""
@@ -95,6 +104,9 @@ class UnitTests(unittest.TestCase):
     fetched = TestModel.get(key2)
     self.assertEquals(2, fetched.number)
     self.assertEquals('#2', fetched.text)
+    self.assertEquals(3.14, fetched.float)
+    self.assertEquals(True, fetched.cond1)
+    self.assertEquals(False, fetched.cond2)
 
   def testGetSingleElementByCustomKey(self):
     """Gets a single model from the datastore with a string key."""

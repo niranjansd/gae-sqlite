@@ -143,8 +143,16 @@ class PRMHelper(object):
         elif value_pb.has_stringvalue():
           col_key = 'string_' + property_name
           property_value = value_pb.stringvalue()
+        elif value_pb.has_booleanvalue():
+          col_key = 'boolean_' + property_name
+          property_value = 1 if value_pb.booleanvalue() else 0
+        elif value_pb.has_doublevalue():
+          col_key = 'double_' + property_name
+          property_value = value_pb.doublevalue()
         else:
           raise 'Not supported yet: %s' % value
+          # TODO: support at least the following primitives:
+          # point, user, reference
         if not populate_dict:
           result[col_key] = property_value
         else:
@@ -182,4 +190,18 @@ class PRMHelper(object):
         prop.set_name(p2)
         prop.set_multiple(False)
         prop.mutable_value().set_stringvalue(value)
+
+      # Case: type boolean
+      elif p1 == 'boolean':
+        prop = pb.add_property()
+        prop.set_name(p2)
+        prop.set_multiple(False)
+        prop.mutable_value().set_booleanvalue(value != 0)
+
+      # Case: type double
+      elif p1 == 'double':
+        prop = pb.add_property()
+        prop.set_name(p2)
+        prop.set_multiple(False)
+        prop.mutable_value().set_doublevalue(value)
     
