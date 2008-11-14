@@ -74,7 +74,7 @@ def create_tabledef(model_instance, prm_helper=None):
   as_dict = prm_helper.entityToDict(pb)
   
   # Translate each key/value pair into a SQL-ish type definition
-  types = {str: 'TEXT', long: 'INTEGER', int: 'INTEGER'}
+  types = {str: 'TEXT', long: 'INTEGER', int: 'INTEGER', float: 'DOUBLE'}
   def convert(value):
     key = type(value)
     assert key in types, 'Cannot convert type %s' % key
