@@ -157,6 +157,35 @@ class UnitTests(unittest.TestCase):
     self.assertEquals('t1', data[0].text)
     self.assertEquals(13, data[0].number)
     
+  def testNewModel(self):
+    """Tests what happens if a new kind of Model gets stored."""
+    class UnknownKind(TestModel):
+      pass
+    model = UnknownKind()
+    model.put()
+    
+  def testAddedField(self):
+    """Tests what happens if a field gets added to a model."""
+    helpers.create_tables([TestModel()], self.connection)
+    class Mutation(TestModel):
+      @classmethod
+      def kind(cls):
+        return 'TestModel'
+      text2 = db.StringProperty(default='some more text')
+    model = Mutation(text='Text 1', text2='Text 2')
+    model.put()
+    
+  def testTypeChange(self):
+    """Tests what happens if a field changes its type."""
+    helpers.create_tables([TestModel()], self.connection)
+    class Mutation(db.Model):
+      @classmethod
+      def kind(cls):
+        return 'TestModel'
+      text = db.IntegerProperty(default=42)
+    model = Mutation(text=23)
+    model.put()
+
     
 if __name__ == '__main__':
     unittest.main()
