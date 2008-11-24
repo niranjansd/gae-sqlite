@@ -58,6 +58,8 @@ class UnitTests(unittest.TestCase):
         'cond1': ['boolean_cond1'],
         'cond2': ['boolean_cond2'],
         'number': ['int64_number']}, schema)
+    no_schema = prm.getSchema(self.connection, 'No_Model')
+    assert no_schema is None
     
   def testWriteSingle(self):
     """Writes a single model to the database retrieves it."""

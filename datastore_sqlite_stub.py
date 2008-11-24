@@ -34,8 +34,28 @@ class PRMHelper(object):
     """
     self.get_connection = get_connection
     self.release_connection = release_connection
+    self.__types = { str: 'TEXT', long: 'INTEGER', 
+                    int: 'INTEGER', float: 'DOUBLE'}
+
+  def __suggestRows(self, sample_dict):
+    """Suggests a list of row definitions for this SQL dialect.
     
-    
+       Args:
+         sample_dict: a dictionary of column names and sample
+           entries (required to determine the sql column type
+           that should be used.)
+       Returns:
+         a list of strings of form "column_name type" that
+         could be used for a sql create table statement.
+    """
+    result = []
+    for key, val in sample_dict.items():
+      value_type = type(val)
+      assert value_type in self.__types, ('Cannot '
+          'convert type %s' % value_type)
+      result.append('%s %s' % (key, self.__types[value_type]))
+    return result
+  
   def getSchema(self, connection, table_name):
     """For a given table name, return all property names defined.
     
@@ -46,11 +66,14 @@ class PRMHelper(object):
     
        Returns:
          a dictionary with the property names as keys and a list
-         of column names (used to store them) as values
+         of column names (used to store them) as values. If the
+         table does not exist, None will be returned
     """
     result = {}
+    has_table = False
     for column in connection.cursor().execute(
         "PRAGMA TABLE_INFO(%s)" % table_name).fetchall():
+      has_table = True
       key = column[1]
       i = key.find('_')
       if i < 1:
@@ -62,8 +85,57 @@ class PRMHelper(object):
       if not p2 in result:
         result[p2] = []
       result[p2].append(key)
-    return result
-      
+    return result if has_table else None
+  
+  def suggestMutation(self, connection, table_name, sample_dict, add_rowz=True):
+    """Suggests an sql statement that mutates a db schema.
+    
+       Given a table name, this method will check if the table exists
+       and if a given set of column names exist. If the table does
+       not exist, it will return a CREATE TABLE statement that
+       can be executed. If the table does exist but one or more
+       column names do not exist, it will return a statement to
+       modify the table instead.
+    
+       Args:
+         connection: the sql connection that should be used to 
+                     gather any metadata
+         table_name: the name of the table that should be validated.
+         sample_dict: a dictionary of column names and sample
+           entries (required to determine the sql column type
+           that should be used.)
+         add_rowz: if set to true, it will create any "standard" columns
+           (for primary keys and such) upon table creation. 
+           True is default.
+       Returns:
+         a list of strings of form "column_name type" that
+         could be used for a sql create table statement.
+    """
+    
+    # Check if the table exists and if so, eliminate duplicate rows
+    new_rows = dict(sample_dict)
+    new_table = False
+    current_schema = self.getSchema(connection, table_name)
+    if current_schema is None:
+      new_table = True
+    else:      
+      for columns in current_schema:
+        for column in columns:
+          new_rows.pop(column, None)
+          
+    # Translate each key/value pair into a SQL-ish type definition
+    # and two more columns for the primary key, if necessary
+    snippets = self.__suggestRows(new_rows)
+    if new_table and add_rowz:  
+      snippets.append('pk_int INTEGER PRIMARY KEY')
+      snippets.append('pk_string TEXT')
+
+    # Convert the snippets into a proper statement
+    if new_table:
+      return 'CREATE TABLE %s (%s);' % (
+          table_name, ','.join(snippets))
+    else:
+      raise 'not implemented yet'
   
   def rowToDict(self, cursor, row, remove_metadata=True):
     """Convert a given row from a cursor into a dictionary,

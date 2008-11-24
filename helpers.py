@@ -49,11 +49,12 @@ def teardown_sqlite():
   proxy._APIProxyStubMap__stub_map.pop('datastore_v3')
   
 
-def create_tabledef(model_instance, prm_helper=None):
+def create_tabledef(connection, model_instance, prm_helper=None):
   """Create a SQL statement to populate a table 
      from a fully populated Model.
   
   Args:
+    connection: a database connection that should be used
     model_instance: an instance of a model, 
       each field filled with a non-None value
     prm_helper: an object that contains logic 
@@ -73,22 +74,9 @@ def create_tabledef(model_instance, prm_helper=None):
   pb = entity._ToPb()
   as_dict = prm_helper.entityToDict(pb)
   
-  # Translate each key/value pair into a SQL-ish type definition
-  types = {str: 'TEXT', long: 'INTEGER', int: 'INTEGER', float: 'DOUBLE'}
-  def convert(value):
-    key = type(value)
-    assert key in types, 'Cannot convert type %s' % key
-    return types[key]
-  cols = ['%s %s' % (key, convert(val)) for key,val in \
-          as_dict.items()]
-  
-  # Add two more columns for the primary key
-  cols.append('pk_int INTEGER PRIMARY KEY')
-  cols.append('pk_string TEXT')
-  
-  # Concatenate all type definitions into one create statement
-  return 'CREATE TABLE %s (%s);' % (
-      model_instance.kind(), ','.join(cols))
+  # Delegate to the prm-helper
+  return prm_helper.suggestMutation(
+      connection, model_instance.kind(), as_dict)
       
       
 def create_tables(list_of_models, connection):
@@ -103,7 +91,7 @@ def create_tables(list_of_models, connection):
   ok = False
   try:
     for model in list_of_models:
-      tabledef = create_tabledef(model)
+      tabledef = create_tabledef(connection, model)
       cursor.execute(tabledef)
     ok = True
   finally:
