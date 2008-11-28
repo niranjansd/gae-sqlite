@@ -142,6 +142,12 @@ class DatastoreSqlStub(object):
                        tablename, [last_path.name()])
         values['pk_string'] = last_path.name()
         
+      # Make sure that the database schema is current
+      schema_mutations = self.__prm.suggestMutation(
+          connection, tablename, values)
+      for mutation in schema_mutations:
+        cursor.execute(mutation)
+      
       # Using the dictionary of values, create a SQL query
       # TODO: how handle list elements
       keyval_list = values.items()
@@ -259,17 +265,16 @@ class DatastoreSqlStub(object):
         sqlquery = '%s :%s' % (sqlquery, count)
       count += 1
   
-    # Open a connection and execute the reentitiesst of the
+    # Open a connection and execute the rest of the
     # method in a try-finally block  
     connection = self._connect(None, False, False)
     try:
       
       # Now, look at the sort order
       order_conditions = []
-      schema = self.__prm.getSchema(connection, query.kind()) \
-          if query.order_size() > 0 else None
+      schema = self.__prm.getSchema(connection, query.kind())
       for entry in query.order_list():
-        if entry.property() in schema:
+        if schema and entry.property() in schema:
           for column in schema[entry.property()]:
             order = \
                 'ASC'\
@@ -281,15 +286,17 @@ class DatastoreSqlStub(object):
         sqlquery = '%s ORDER BY %s' % (
             sqlquery, ', '.join(order_conditions))
     
-      # Execute the query
-      cursor = connection.cursor()
-      cursor.execute(sqlquery, params)
-      try:
-        for i in range(query.offset()):
-          cursor.next()
-      except StopIteration:
-        pass
-      rows = cursor.fetchmany(max(0,min(1000, query.limit())))
+      # Execute the query, if the table exists
+      rows = []
+      if schema:
+        cursor = connection.cursor()
+        cursor.execute(sqlquery, params)
+        try:
+          for i in range(query.offset()):
+            cursor.next()
+        except StopIteration:
+          pass
+        rows = cursor.fetchmany(max(0,min(1000, query.limit())))
     
       # Convert the rows into PBs
       results = []

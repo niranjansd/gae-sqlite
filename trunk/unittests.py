@@ -159,6 +159,22 @@ class UnitTests(unittest.TestCase):
     self.assertEquals('t1', data[0].text)
     self.assertEquals(13, data[0].number)
     
+  def testQueryOnNonExistentColumn(self):
+    helpers.create_tables([TestModel()], self.connection)
+    model = TestModel(text='t1', number=13)
+    model.put()
+    data = TestModel.gql(
+        'WHERE text2=:1 and number=:2 order by text desc', 
+        't1', 13).fetch(5)
+    self.assertEquals(0, len(data))
+    
+  def testQueryOnNonExistentTable(self):
+    class UnknownKind(TestModel):
+      pass
+    data = UnknownKind.gql(
+        'WHERE text=:1', 't1').fetch(5)
+    self.assertEquals(0, len(data))
+    
   def testNewModel(self):
     """Tests what happens if a new kind of Model gets stored."""
     class UnknownKind(TestModel):
