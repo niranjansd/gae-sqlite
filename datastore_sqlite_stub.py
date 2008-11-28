@@ -108,8 +108,7 @@ class PRMHelper(object):
            (for primary keys and such) upon table creation. 
            True is default.
        Returns:
-         a list of strings of form "column_name type" that
-         could be used for a sql create table statement.
+         a list sql statements that can be executed to perform the mutation
     """
     
     # Check if the table exists and if so, eliminate duplicate rows
@@ -119,9 +118,15 @@ class PRMHelper(object):
     if current_schema is None:
       new_table = True
     else:      
-      for columns in current_schema:
+      for columns in current_schema.values():
         for column in columns:
           new_rows.pop(column, None)
+        new_rows.pop('pk_string', None)
+        new_rows.pop('pk_int', None)
+          
+    # If there are no new rows, we are done
+    if not new_table and not len(new_rows):
+      return []
           
     # Translate each key/value pair into a SQL-ish type definition
     # and two more columns for the primary key, if necessary
@@ -132,10 +137,11 @@ class PRMHelper(object):
 
     # Convert the snippets into a proper statement
     if new_table:
-      return 'CREATE TABLE %s (%s);' % (
-          table_name, ','.join(snippets))
+      return ['CREATE TABLE %s (%s);' %
+          (table_name, ','.join(snippets))]
     else:
-      raise 'not implemented yet'
+      return ['ALTER TABLE %s ADD COLUMN %s' % 
+          (table_name, snippet) for snippet in snippets]
   
   def rowToDict(self, cursor, row, remove_metadata=True):
     """Convert a given row from a cursor into a dictionary,

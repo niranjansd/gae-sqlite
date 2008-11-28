@@ -76,7 +76,7 @@ def create_tabledef(connection, model_instance, prm_helper=None):
   
   # Delegate to the prm-helper
   return prm_helper.suggestMutation(
-      connection, model_instance.kind(), as_dict)
+      connection, model_instance.kind(), as_dict)[0]
       
       
 def create_tables(list_of_models, connection):
