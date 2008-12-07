@@ -15,8 +15,14 @@
 from datastore_base import DatastoreSqlStub
 from datastore_sqlite_stub import PRMHelper
 from google.appengine.api import apiproxy_stub_map
+from google.appengine.api import datastore_file_stub
 from pysqlite2 import dbapi2 as sqlite
 
+
+def setup_refstore(app_id='test'):
+  """Sets up a clean "reference" store (file-based implementation."""
+  stub = datastore_file_stub.DatastoreFileStub(app_id, None, None)
+  apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
 
 def setup_sqlite(name=None):
   """Sets up an in-memory sqlite instance 
