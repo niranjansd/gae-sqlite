@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from google.appengine.ext import db
+from google.appengine.api import datastore
 import helpers
 import unittest
 import datastore_sqlite_stub
@@ -37,6 +38,28 @@ class UnitTests(unittest.TestCase):
   def tearDown(self):
     """Cleanup after a unit test."""
     helpers.teardown_sqlite()
+    
+  def __testStoreNoneInCurrentStore(self):
+    entity_with_value = datastore.Entity('tst')
+    entity_with_value['value'] = 'value'
+    key1 = datastore.Put(entity_with_value)
+    entity_without_value = datastore.Entity('tst')
+    key2 = datastore.Put(entity_without_value)
+    entity_with_none_value = datastore.Entity('tst')
+    entity_with_none_value['value'] = None
+    key3 = datastore.Put(entity_with_none_value)
+    fetched = datastore.Get([key1, key2, key3])
+    self.assertEquals('value', fetched[0]['value'])
+    self.assertFalse('value' in fetched[1])
+    self.assertEquals(None, fetched[2]['value'])
+    
+  def testStoreNoneInReferenceStore(self):
+    helpers.teardown_sqlite()
+    helpers.setup_refstore('test')
+    self.__testStoreNoneInCurrentStore()
+        
+  def testStoreNoneInRdbmsStore(self):
+    self.__testStoreNoneInCurrentStore()
     
   def testCreateTabledef(self):
     """Checks if our TestModel can be converted 
