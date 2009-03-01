@@ -227,8 +227,11 @@ class PRMHelper(object):
         elif value_pb.has_doublevalue():
           col_key = 'double_' + property_name
           property_value = value_pb.doublevalue()
+        elif not len(value_pb.Encode()):
+          col_key = 'none_' + property_name
+          property_value = 1
         else:
-          raise 'Not supported yet: %s' % value
+          raise 'Not supported yet: %s' % value_pb
           # TODO: support at least the following primitives:
           # point, user, reference
         if not populate_dict:
@@ -254,6 +257,10 @@ class PRMHelper(object):
         continue
       p1 = key[0:i]
       p2 = key[i+1:]
+      
+      # Case: no value (column exists but is not populated)
+      if value is None:
+        continue
       
       # Case: type integer
       if p1 == 'int64':
@@ -282,4 +289,10 @@ class PRMHelper(object):
         prop.set_name(p2)
         prop.set_multiple(False)
         prop.mutable_value().set_doublevalue(value)
-    
+        
+      # Case: type 'none'
+      elif p1 == 'none':
+        prop = pb.add_property()
+        prop.set_name(p2)
+        prop.set_multiple(False)
+        prop.mutable_value()

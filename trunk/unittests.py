@@ -48,6 +48,9 @@ class UnitTests(unittest.TestCase):
     entity_with_none_value = datastore.Entity('tst')
     entity_with_none_value['value'] = None
     key3 = datastore.Put(entity_with_none_value)
+    datastore.Get([key3])
+    datastore.Get([key2])
+    datastore.Get([key1])
     fetched = datastore.Get([key1, key2, key3])
     self.assertEquals('value', fetched[0]['value'])
     self.assertFalse('value' in fetched[1])

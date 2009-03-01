@@ -154,10 +154,13 @@ class DatastoreSqlStub(object):
       key_list = ','.join([first for first, second in keyval_list])
       value_list = [second for first, second in keyval_list]
       questionmarks = ','.join(['?' for value in value_list])
-      cursor.execute(
-          'INSERT INTO %s (%s) VALUES (%s)' % 
-              (tablename, key_list, questionmarks),
-          value_list)
+      if len(key_list):
+        cursor.execute(
+            'INSERT INTO %s (%s) VALUES (%s)' % 
+                (tablename, key_list, questionmarks),
+            value_list)
+      else:
+        cursor.execute('INSERT INTO %s (pk_string) VALUES(null)' % tablename)
       
       # Grab the primary key and update the result
       if last_path.id() == 0 and not last_path.has_name():
